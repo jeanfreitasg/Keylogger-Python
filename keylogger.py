@@ -61,7 +61,7 @@ def send_email():
 
 def exit_handler():
     WriteFile()
-    #send_email()
+    send_email()
 
 
 atexit.register(exit_handler)
