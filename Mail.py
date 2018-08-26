@@ -1,33 +1,41 @@
 from smtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 
 class MailSender(object):
     """Create a e-mail sender using the SMTPlib"""
 
-    def __init__(self, sender, senderPassword, receiver,
+    def __init__(self, From, senderPassword, To,
                  smtpServer, attachment, subject, body):
-        self.sender = sender
+        self.From = From
         self.senderPassword = senderPassword
-        self.receiver = receiver
+        self.To = To
         self.smtpServer = smtpServer
         self.attachment = attachment
         self.subject = subject
         self.body = body
 
-    def send_email():
+    def send_email(self):
         msg = MIMEMultipart()
-        msg['To'] = self.receiver
-        msg['From'] = self.sender
+        msg['To'] = self.To
+        msg['From'] = self.From
         msg['Subject'] = self.subject
-        msg.attach(MIMEText(self.body))
+        msg.attach(MIMEText(self.body, 'plain'))
 
         with open(self.attachment, 'rb') as file:
-            msg.attach(MIMEText(file.read))
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload((file).read())
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition',
+                            "attachment; filename= %s" % file.name)
+            msg.attach(part)
 
         with SMTP(self.smtpServer) as server:
             server.starttls()
-            server.login(self.sender, self.password)
-            server.sendmail(self.sender, self.receiver, msg.as_string())
+            server.login(self.From, self.senderPassword)
+            server.sendmail(self.From, self.To, msg.as_string())
             server.quit()
+        return
