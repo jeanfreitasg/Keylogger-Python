@@ -6,7 +6,19 @@ from email import encoders
 
 
 class MailSender(object):
-    """Create a e-mail sender using the SMTPlib"""
+
+    """
+    Create a e-mail sender using the SMTPlib
+
+    Attributes:
+        attachment (STRING): Path of the file to be attached
+        body (STRING): The Email body/message
+        From (STRING): Sender's email
+        senderPassword (STRING): Sender's email password
+        smtpServer (STRING): SMTP Server (smtp.server.com:port)
+        subject (STRING): The subject of the email
+        To (STRING): recipient of the email
+    """
 
     def __init__(self, From, senderPassword, To,
                  smtpServer, attachment, subject, body):
